@@ -1,4 +1,8 @@
-# Create `.env` file with the following content
+# Environment Variables Configuration
+
+To set up your environment, create a `.env` file in the root directory of your project with the following content:
+
+
 
 JWT_SECRET="< SOME RANDOM SECRATE >"<br/>
 PORT=8000<br/>

@@ -1,0 +1,266 @@
+import React, { useRef, useContext, useEffect } from 'react';
+import nvstyle from './navbar.module.css';
+import './navbar.css';
+import { pageDesignContext, userDetailsContext } from '../../Context/contexts';
+import { useNavigate, useMatch, Link } from 'react-router-dom';
+import { useUser } from '../auth/useUser';
+export default function Navbar() {
+  const navigate = useNavigate();
+
+  const parentDropDownSlide = useRef(null);
+  const dropdownSlide = useRef(null);
+  const selectPageList = useRef(null);
+
+  const pageDesignState = useContext(pageDesignContext);
+  const UserDetailsState = useContext(userDetailsContext);
+
+  const isPageDesign = useMatch('/designer/:projectId/:pageId');
+  const isPageDesignEmpty = useMatch('/designer/:projectId/:pageId');
+
+  const isUser = useUser();
+
+  useEffect(() => {}, [pageDesignState.webDesignState]);
+
+  const currentActiveMenu = (e) => {
+    let elpos = +e.target.closest('li').getAttribute('data-elementId');
+
+    let allListEl = parentDropDownSlide.current.querySelectorAll('li[data-elementid]');
+
+    if (elpos - 2 > -1) {
+
+      allListEl[elpos - 2].querySelector('ul').style.transform = `translateX(${
+        allListEl[elpos - 2].getBoundingClientRect().width
+      }px) `;
+      allListEl[elpos - 2].querySelector('ul').style.scale = 0;
+    }
+
+    if (elpos < allListEl.length) {
+      allListEl[elpos].querySelector('ul').style.transform = `translateX(-${
+        allListEl[elpos].getBoundingClientRect().width
+      }px) `;
+      allListEl[elpos].querySelector('ul').style.scale = 0;
+    }
+
+    let el = e.target.closest('li').querySelector('ul');
+    if (el) {
+      el.style.transform = `translateX(0px) rotateY(0deg)`;
+      el.style.scale = 1;
+    }
+
+    let ht = e.target.closest('li').getAttribute('data-dropheight');
+    dropdownSlide.current.style.transform = `translateX(${
+      e.target.getBoundingClientRect().x -
+      parentDropDownSlide.current.getBoundingClientRect().x -
+      10
+    }px)`;
+    dropdownSlide.current.style.height = ht + 'px';
+  };
+
+  const elementLeaveRemove = (e) => {
+    let el = e.target.closest('li').querySelector('ul');
+    if (el) {
+      el.style.transform = `translateX(0px) rotateY(0deg) scale(0)`;
+      el.style.scale = 0;
+    }
+  };
+
+  const elementInnerLeaveRemove = (e) => {
+    if (e.clientY > 40) {
+      let el = e.target.closest('li[data-elementid]').querySelector('ul');
+      if (el) {
+        el.style.transform = `translateX(0px) rotateY(0deg) scale(0)`;
+        el.style.scale = 0;
+        el.style.height = 0;
+      }
+    }
+  };
+
+  const removeSliderBox = (e) => {
+    dropdownSlide.current.style.scale = 0;
+    dropdownSlide.current.style.opacity = 0;
+  };
+
+  const showSliderBox = (e) => {
+    dropdownSlide.current.style.opacity = 1;
+    dropdownSlide.current.style.scale = 1;
+  };
+
+  const createNewPage = () => {
+    pageDesignState.setDesign({ ...pageDesignState.design, settigMode: 4 });
+  };
+
+  return (
+    <nav className={nvstyle['navbar']}>
+      <div className={nvstyle['navbar_header_logo']}>Craftify</div>
+      {isPageDesign &&
+        pageDesignState.webDesignState.pages &&
+        pageDesignState.webDesignState.pages.length > 0 && (
+          <div className={nvstyle['navbar_header_logo']}>
+            <span
+              className="pageSelectorSpan"
+              onClick={() => {
+                selectPageList.current.classList.toggle('show');
+              }}
+            >
+              {pageDesignState.webDesignState.pages &&
+                pageDesignState.webDesignState.pages.map((e) => {
+                  return UserDetailsState.editorState.pageId === e.pageId ? e.pageName : '';
+                })}
+            </span>
+
+            <>
+              <button
+                className="selectPage"
+                onClick={() => {
+                  selectPageList.current.classList.toggle('show');
+                }}
+              >
+                <i className="las la-angle-down"></i>
+              </button>
+              <div ref={selectPageList} className="subPagesList">
+                <ul className="selectPage">
+                  <div className="inList">
+                    {pageDesignState.webDesignState.pages &&
+                      pageDesignState.webDesignState.pages.map((e, i) => {
+                        return (
+                          <li
+                            key={i}
+                            className={
+                              UserDetailsState.editorState.pageId === e.pageId
+                                ? 'active menuPagesList'
+                                : 'menuPagesList'
+                            }
+                          >
+                            <Link
+                              className="pageOption"
+                              to={`/designer/${UserDetailsState.editorState.websiteId}/${e.pageId}/`}
+                              data-page-id={e.pageId}
+                            >
+                              {e.pageName}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                  </div>
+                  <hr />
+                  <button onClick={createNewPage}>+ Create New Page</button>
+                </ul>
+              </div>
+            </>
+          </div>
+        )}
+
+      {(isPageDesign || isPageDesignEmpty) && (
+        <>
+          <div className="user-web-link">
+            <span>{`http://${window.location.hostname}/web/${pageDesignState.webDesignState._id}${pageDesignState.design.pageUri}`}</span>
+            <a
+              className="external-open"
+              target="_blank"
+              href={
+                !pageDesignState.design.published
+                  ? `/preview/${UserDetailsState.editorState.websiteId}/${UserDetailsState.editorState.pageId}/`
+                  : `/web/${pageDesignState.webDesignState._id}${pageDesignState.design.pageUri}`
+              }
+            >
+              <i className="las la-external-link-alt"></i>
+            </a>
+          </div>
+          <div className={nvstyle['user_persistant_actions']}>
+            <ul className={nvstyle['navbar_menu_level_one']}>
+              <li>
+                <a
+                  onClick={() =>
+                    pageDesignState.setDesign({ ...pageDesignState.design, pageMode: 1 })
+                  }
+                  className={
+                    nvstyle['btn_responsive'] +
+                    ' responsive_mobile ' +
+                    (pageDesignState.design.pageMode ? nvstyle['active'] : '')
+                  }
+                  href="#"
+                >
+                  <i className="las la-desktop"></i>
+                </a>
+              </li>
+              <li>
+                <a
+                  onClick={() =>
+                    pageDesignState.setDesign({ ...pageDesignState.design, pageMode: 0 })
+                  }
+                  className={
+                    nvstyle['btn_responsive'] +
+                    ' responsive_pc ' +
+                    (!pageDesignState.design.pageMode ? nvstyle['active'] : '')
+                  }
+                  href="#"
+                >
+                  <i className="las la-mobile"></i>
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div className={nvstyle['user_persistant_actions']}>
+            <ul className={nvstyle['navbar_menu_level_one']}>
+              <li>
+                <a
+                  className={nvstyle['highlight_btn_light_prev']}
+                  href={
+                    !pageDesignState.design.published
+                      ? `/preview/${UserDetailsState.editorState.websiteId}/${UserDetailsState.editorState.pageId}/`
+                      : `/web/${pageDesignState.webDesignState._id}${pageDesignState.design.pageUri}`
+                  }
+                  target="_blank"
+                >
+                  {!pageDesignState.design.published ? 'Preview' : 'Open'}
+                </a>
+              </li>
+              <li>
+                <a
+                  className={nvstyle['highlight_btn_light']}
+                  onClick={pageDesignState.getWebPageImageAndSavePage}
+                >
+                  {!pageDesignState.design.published ? 'Save' : 'Update'}
+                </a>
+              </li>
+              <li>
+                <a onClick={pageDesignState.publishWebPage} className={nvstyle['highlight_btn']}>
+                  {!pageDesignState.design.published ? 'Publish' : 'UnPublish'}
+                </a>
+              </li>
+            </ul>
+          </div>
+        </>
+      )}
+      <div className={nvstyle['navbar_user_details']}>
+        <ul className={nvstyle['navbar_user_details']}>
+          <li>
+            <a href="/" className={nvstyle['navbar_user_profile']}>
+              {UserDetailsState.user.user
+                ? UserDetailsState.user.user.charAt(0).toUpperCase()
+                : 'U'}
+            </a>
+            <ul>
+              {/** 
+                            /* Will do that sometime else
+                            <li><a href='/'>My Profile</a></li> */}
+              <li>
+                <Link to="/my-websites">My Websites</Link>
+              </li>
+              <li>
+                <a
+                  onClick={() => {
+                    localStorage.removeItem('token');
+                    navigate('/');
+                  }}
+                >
+                  Logout
+                </a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  );
+}
